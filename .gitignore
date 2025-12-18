@@ -1,0 +1,17 @@
+# Json Files
+Dummy_request.json
+Dummy_response.json
+
+# Frontend
+frontend/
+
+#Backend 
+.venv/
+.env
+
+# Learning Model Files
+Notes/
+
+# VS Code Files
+.vscode/
+
