@@ -1,0 +1,38 @@
+{
+  "resourceType": "Bundle",
+  "type": "document",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "code": { "text": "Type 2 Diabetes Mellitus" },
+        "subject": { "display": "Patient ABHA: suresh@abdm" }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "status": "active",
+        "authoredOn": "2023-11-15",
+        "medicationCodeableConcept": {
+          "text": "Metformin 500mg"
+        },
+        "dosageInstruction": [
+          {
+            "text": "One tablet daily after dinner"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "code": { "text": "HbA1c" },
+        "valueQuantity": {
+          "value": 6.5,
+          "unit": "%"
+        }
+      }
+    }
+  ]
+}
