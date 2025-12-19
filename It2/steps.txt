@@ -1,0 +1,103 @@
+Steps to run the app locally (backend + frontend)
+
+Prepare env files
+
+Create backend/.env with at least:
+MONGO_URL=mongodb://localhost:27017
+DB_NAME=mainel_dev
+CORS_ORIGINS=http://localhost:3000
+GEMINI_API_KEY=       # optional
+GOOGLE_APPLICATION_CREDENTIALS= # optional path to GCP creds
+
+Create frontend/.env:
+REACT_APP_BACKEND_URL=http://localhost:8000
+
+Start a local MongoDB (quick Docker option)
+docker run -d --name local-mongo -p 27017:27017 mongo:6.0
+
+(If you prefer a local install, ensure MongoDB is running and reachable at MONGO_URL.)
+
+Setup & run backend
+# from repo root
+cd backend
+
+# create venv (optional but recommended)
+python3 -m venv .venv
+source .venv/bin/activate
+
+# install deps
+pip install -r requirements.txt
+
+# run server (FastAPI uvicorn)
+uvicorn server:app --reload --host 0.0.0.0 --port 8000
+
+Endpoint base: http://localhost:8000/api
+If uvicorn not in PATH, run python -m uvicorn server:app --reload --host 0.0.0.0 --port 8000.
+
+Setup & run frontend
+cd frontend
+
+# using yarn (preferred for this repo)
+yarn install
+yarn start
+
+# or with npm
+npm install
+npm start
+
+Frontend dev server default: http://localhost:3000
+Workflow & verification
+Upload an image via the UI at http://localhost:3000.
+The backend will process OCR + extraction, then set processing_status to awaiting_verification.
+Open the Processed Prescriptions list in the UI; a prefilled verification form will appear. Edit/approve and click "Approve & Save" to POST verified data to /api/prescriptions/{id}/verify.
+Notes & troubleshooting
+
+Ensure MONGO_URL and DB_NAME in backend/.env match the running MongoDB.
+If using GCP Vision or Gemini, set GOOGLE_APPLICATION_CREDENTIALS and GEMINI_API_KEY.
+CORS: CORS_ORIGINS defaults to * if unset; the example sets it to http://localhost:3000.
+If any dependency install fails, paste the error and I can help fix it.
+
+
+Steps to get GCP credentials (service account JSON) and use them with this app
+
+Enable required APIs (replace PROJECT_ID)
+gcloud config set project PROJECT_ID
+gcloud services enable vision.googleapis.com generativeai.googleapis.com
+
+Create a service account
+gcloud iam service-accounts create presc-sa \
+  --display-name="Prescription OCR service account"
+
+Grant the service account the needed roles
+gcloud projects add-iam-policy-binding PROJECT_ID \
+  --member="serviceAccount:presc-sa@PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/vision.admin"
+
+gcloud projects add-iam-policy-binding PROJECT_ID \
+  --member="serviceAccount:presc-sa@PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/aiplatform.user"
+
+OR 
+Service Usage Consumer, Vision AI Admin
+
+In Console -> IAM, add the service account and grant it access to Cloud Vision and Generative AI.
+Or with gcloud (example roles; adjust for least privilege):
+(Prefer assigning the minimal predefined role that provides access to the specific API your app uses.)
+
+Create and download a JSON key
+mkdir -p ~/.gcp-keys
+gcloud iam service-accounts keys create ~/.gcp-keys/presc-sa-key.json \
+  --iam-account=presc-sa@PROJECT_ID.iam.gserviceaccount.com
+
+This writes the JSON key to the given path. Keep it private.
+Point your app to the key
+Export env var locally:
+export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.gcp-keys/presc-sa-key.json"
+
+Or add to backend/.env:
+GOOGLE_APPLICATION_CREDENTIALS=/full/path/to/presc-sa-key.json
+Security & best practices
+Do NOT commit the JSON key to source control.
+Use Workload Identity / Workload Federation or instance/service account bindings for production (avoid long-lived keys).
+Restrict the service account to the minimal roles and enable IAM Conditions if needed.
+Rotate and delete keys regularly via Console or gcloud iam service-accounts keys delete.
